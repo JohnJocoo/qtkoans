@@ -1,0 +1,23 @@
+<root>
+    <simple></simple>
+    <with_children>
+        <child1></child1>
+        <child2></child2>
+        <child3></child3>
+    </with_children>
+    <with_attributes int_value="1" string_value="string value"></with_attributes>
+    <int_attribute int_value="43"></int_attribute>
+    <string_attribute string_value="some data here"></string_attribute>
+    <node1>
+        <node2>
+            <node3>
+                <node4 int_value="2" string_value="im string"></node4>
+            </node3>
+        </node2>
+    </node1>
+    <node5>
+        <wrong_attributes hidden_value="The Byrgenwerth spider hides all manner of rituals, certain to reveal nothing, for true enlightenment need not be shared.">
+        </wrong_attributes>
+        <int_attribute_malformed int_value="two"></int_attribute_malformed>
+    </node5>
+</root>
