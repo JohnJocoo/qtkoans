@@ -366,6 +366,7 @@ void TreeModelFromScratch::index()
         QVERIFY2(i < children.size(), (QString::fromLatin1("can't find ") + cur_path)
                  .toStdString().c_str());
         QCOMPARE(index.row(), i);
+        QCOMPARE(index.column(), 0);
     }
     QCOMPARE(cur_path, path);
 }

@@ -187,11 +187,13 @@ void ListModelFromScratch::index()
         QModelIndex index = m_model->index(0);
         QVERIFY(index.isValid());
         QCOMPARE(index.row(), 0);
+        QCOMPARE(index.column(), 0);
     }
     {
         QModelIndex index = m_model->index(5);
         QVERIFY(index.isValid());
         QCOMPARE(index.row(), 5);
+        QCOMPARE(index.column(), 0);
     }
     QVERIFY(m_dataChanged.isEmpty());
     QVERIFY(m_rowsInserted.isEmpty());
