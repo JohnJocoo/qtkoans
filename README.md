@@ -1,4 +1,4 @@
-Series of TDD tasks to practice your Qt skils. 
+Series of TDD tasks to practice your Qt skills. 
 
 Licenced under Creative Commons "Attribution".
 
