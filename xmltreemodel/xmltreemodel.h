@@ -70,6 +70,18 @@ public:
      */
     bool setData(const QModelIndex &index, const QVariant &value,
                  int role = Qt::DisplayRole);
+
+public:
+    /* Merge doc into current tree.
+     * If doc has new tag, insert it and emit inserted(),
+     * if such tag already exists in local tree,
+     * merge recursively.
+     * If doc's tag contains new attribute, insert it to
+     * local tree tag and emit dataChanged(),
+     * if attribute already exists, reset it's value and
+     * emit dataChanged().
+     */
+    void merge(QDomDocument doc);
 };
 
 #endif // XMLTREEMODEL_H

@@ -1,5 +1,8 @@
 <RCC>
     <qresource prefix="/xml">
         <file alias="simple">resource/simple.xml</file>
+        <file alias="insertion_modification">resource/insertion_modification.xml</file>
+        <file alias="insertion">resource/insertion.xml</file>
+        <file alias="modification">resource/modification.xml</file>
     </qresource>
 </RCC>

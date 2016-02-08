@@ -48,3 +48,8 @@ bool XmlTreeModel::setData(const QModelIndex &index, const QVariant &value,
 {
     return false;
 }
+
+void XmlTreeModel::merge(QDomDocument doc)
+{
+
+}

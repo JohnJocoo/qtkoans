@@ -11,7 +11,7 @@
     <node1>
         <node2>
             <node3>
-                <node4 int_value="2" string_value="im string"></node4>
+                <node4 int_value="2" string_value=""></node4>
             </node3>
         </node2>
     </node1>

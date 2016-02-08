@@ -124,6 +124,18 @@ private:
 
         }
 
+        bool operator==(const DataChangedInfo &other) const
+        {
+            if (other.roles.size() != roles.size())
+                return false;
+            foreach (int role, other.roles)
+            {
+                if (!roles.contains(role))
+                    return false;
+            }
+            return path == other.path;
+        }
+
         QString path;
         QVector<int> roles;
     };
@@ -135,6 +147,11 @@ private:
               about(about)
         {
 
+        }
+
+        bool operator==(const RowsInsertedInfo &other) const
+        {
+            return parent == other.parent && about == other.about;
         }
 
         QString parent;
@@ -179,7 +196,7 @@ void recursiveCompareNodes(QDomNode node1, QDomNode node2, bool *res,
         QDomNode attr2 = attributes2.namedItem(attr1.nodeName());
 
         QVERIFY2(!attr2.isNull(),
-                 (path + "/" + node2.nodeName() + " doesn't contain \"" +
+                 (path + "/" + node1.nodeName() + " doesn't contain \"" +
                   attr1.nodeName() + "\" attribute").toStdString().c_str());
 
         QVERIFY2(attr1.nodeValue() == attr2.nodeValue(),
@@ -217,11 +234,133 @@ void recursiveCompareNodes(QDomNode node1, QDomNode node2, bool *res,
     *res = true;
 }
 
+void recursiveNodeContains(QDomNode node1, QDomNode node2, bool *res,
+                           QString path)
+{
+    QVERIFY2(node1.nodeName() == node2.nodeName(),
+             (path + " " + node1.nodeName() + " == " +
+              node2.nodeName()).toStdString().c_str());
+
+    QVERIFY2(node1.childNodes().size() >= node2.childNodes().size(),
+             (path + " " + node1.nodeName() + ".childNodes(" +
+              QString::number(node1.childNodes().size()) +
+              ") == " + node2.nodeName() + ".childNodes(" +
+              QString::number(node2.childNodes().size()) +
+              ")").toStdString().c_str());
+
+    QVERIFY2(node1.attributes().size() >= node2.attributes().size(),
+             (path + " " + node1.nodeName() + ".attributes(" +
+              QString::number(node1.attributes().size()) +
+              ") == " + node2.nodeName() + ".attributes(" +
+              QString::number(node2.attributes().size()) +
+              ")").toStdString().c_str());
+
+    QDomNamedNodeMap attributes1 = node1.attributes();
+    QDomNamedNodeMap attributes2 = node2.attributes();
+
+    for (int i = 0; i < attributes2.size(); ++i)
+    {
+        QDomNode attr2 = attributes2.item(i);
+        QDomNode attr1 = attributes1.namedItem(attr2.nodeName());
+
+        QVERIFY2(!attr1.isNull(),
+                 (path + "/" + node1.nodeName() + " doesn't contain \"" +
+                  attr2.nodeName() + "\" attribute").toStdString().c_str());
+
+        QVERIFY2(attr1.nodeValue() == attr2.nodeValue(),
+                 (path + "/" + node1.nodeName() + ":" + attr1.nodeName() +
+                  " (" + attr1.nodeValue() + ") == (" +
+                  attr2.nodeValue() + ")").toStdString().c_str());
+    }
+
+    QDomNodeList children1 = node1.childNodes();
+    QDomNodeList children2 = node2.childNodes();
+
+    for (int i = 0; i < children2.size(); ++i)
+    {
+        bool child_res = false;
+        QDomNode c_node2 = children2.item(i);
+        for (int j = 0; j < children1.size(); ++j)
+        {
+            QDomNode c_node1 = children1.item(j);
+            if (c_node1.nodeName() == c_node2.nodeName())
+            {
+                recursiveNodeContains(c_node1, c_node2, &child_res,
+                                      path + "/" + node1.nodeName());
+                if (!child_res)
+                    return;
+                break;
+            }
+        }
+        if (!child_res)
+        {
+            QFAIL((path + " \"" + c_node2.nodeName() + "\" node can't be found")
+                  .toStdString().c_str());
+        }
+    }
+
+    *res = true;
+}
+
+void recursiveMergeNodes(QDomNode node1, QDomNode node2, QString path)
+{
+    QVERIFY2(node1.nodeName() == node2.nodeName(),
+             (path + " " + node1.nodeName() + " == " +
+              node2.nodeName()).toStdString().c_str());
+
+    QDomNamedNodeMap attributes1 = node1.attributes();
+    QDomNamedNodeMap attributes2 = node2.attributes();
+
+    for (int i = 0; i < attributes2.size(); ++i)
+    {
+        QDomNode attr_node = attributes1.namedItem(
+                    attributes2.item(i).nodeName());
+        if (attr_node.isNull())
+            attributes1.setNamedItem(attributes2.item(i).cloneNode());
+        else
+            attr_node.setNodeValue(attributes2.item(i).nodeValue());
+    }
+
+    QDomNodeList children1 = node1.childNodes();
+    QDomNodeList children2 = node2.childNodes();
+
+    for (int i = 0; i < children2.size(); ++i)
+    {
+        QDomNode c_node2 = children2.item(i);
+        bool insert = true;
+        for (int j = 0; j < children1.size(); ++j)
+        {
+            QDomNode c_node1 = children1.item(j);
+            if (c_node1.nodeName() == c_node2.nodeName())
+            {
+                recursiveMergeNodes(c_node1, c_node2,
+                                      path + "/" + node1.nodeName());
+                insert = false;
+                continue;
+            }
+        }
+        if (insert)
+            node1.appendChild(c_node2.cloneNode());
+    }
+}
+
 bool compareDocuments(QDomDocument doc1, QDomDocument doc2)
 {
     bool res = false;
     recursiveCompareNodes(doc1, doc2, &res, QString(""));
     return res;
+}
+
+bool containsElements(QDomDocument doc1, QDomDocument doc2)
+{
+    bool res = false;
+    recursiveNodeContains(doc1, doc2, &res, QString(""));
+    return res;
+}
+
+void mergeDocuments(QDomDocument doc1, QDomDocument doc2)
+{
+    recursiveMergeNodes(doc1, doc2, QString(""));
 }
 
 void updateAttrs(QDomNode node, int role, QString value, QDomDocument doc)
@@ -326,7 +465,7 @@ void TreeModelFromScratch::document()
 {
     QDomDocument doc = m_model->document();
     QVERIFY(!doc.isNull());
-    compareDocuments(m_tree, doc);
+    compareDocuments(doc, m_tree);
 }
 
 void TreeModelFromScratch::index_data()
@@ -566,7 +705,7 @@ void TreeModelFromScratch::data_data()
                                << QVariant(2);
     QTest::newRow("node4_str") << "/node1/node2/node3/node4"
                                << (int) XmlTreeModel::CustomStringRole
-                               << QVariant(QString::fromLatin1("im string"));
+                               << QVariant(QString::fromLatin1(""));
     QTest::newRow("node4_inv") << "/node1/node2/node3/node4"
                                << (int) (Qt::UserRole + 100)
                                << QVariant();
@@ -710,16 +849,88 @@ void TreeModelFromScratch::setData()
 
 void TreeModelFromScratch::merge_data()
 {
+    typedef QList<QPair<QString, QVector<int> > > ChangesType;
 
+    QTest::addColumn<QString>("path");
+    QTest::addColumn<QStringList>("insertions");
+    QTest::addColumn<ChangesType>("changes");
+
+    QTest::newRow("insertion") << QString(":/xml/insertion")
+                               << (QStringList()
+                                   << QString("/")
+                                   << QString("/node1/node2/node3")
+                                   << QString("/node1/node2/node3/parent_inserted_node"))
+                               << QList<QPair<QString, QVector<int> > >();
+    {
+        QList<QPair<QString, QVector<int> > > changes;
+        changes.append(QPair<QString, QVector<int> >(
+                           QString("/with_attributes"),
+                           QVector<int>() << XmlTreeModel::CustomIntRole));
+        changes.append(QPair<QString, QVector<int> >(
+                           QString("/node1/node2/node3"),
+                           QVector<int>() << XmlTreeModel::CustomStringRole));
+        QTest::newRow("modification") << QString(":/xml/modification")
+                                      << QStringList()
+                                      << changes;
+    }
+    {
+        QList<QPair<QString, QVector<int> > > changes;
+        changes.append(QPair<QString, QVector<int> >(
+                           QString("/with_children/child1"),
+                           QVector<int>() << XmlTreeModel::CustomIntRole));
+        QTest::newRow("insertion_modification") << QString(":/xml/insertion_modification")
+                                                << (QStringList()
+                                                    << QString("/with_children/child3"))
+                                                << changes;
+    }
 }
 
 void TreeModelFromScratch::merge()
 {
+    typedef QList<QPair<QString, QVector<int> > > ChangesType;
+    typedef QPair<QString, QVector<int> > ChangeType;
 
+    QFETCH(QString, path);
+    QFETCH(QStringList, insertions);
+    QFETCH(ChangesType, changes);
+
+    QDomDocument doc;
+    QFile xml_in(path);
+    xml_in.open(QIODevice::ReadOnly);
+    doc.setContent(&xml_in);
+    xml_in.close();
+
+    m_model->merge(doc.cloneNode().toDocument());
+    QVERIFY(containsElements(m_model->document(), doc));
+    QCOMPARE(m_rowsInserted.size(), insertions.size() * 2);
+    foreach (QString insertion, insertions)
+    {
+        QVERIFY(m_rowsInserted.contains(RowsInsertedInfo(insertion, true)));
+        QVERIFY(m_rowsInserted.contains(RowsInsertedInfo(insertion, false)));
+    }
+    QCOMPARE(m_dataChanged.size(), changes.size());
+    foreach (ChangeType change, changes)
+    {
+        QVERIFY(m_dataChanged.contains(DataChangedInfo(change.first, change.second)));
+    }
+    mergeDocuments(m_tree, doc);
 }
 
 void TreeModelFromScratch::document2()
 {
+    {
+        QFile xml_out("/Users/anton/Temporary/test.xml");
+        xml_out.open(QIODevice::WriteOnly);
+        xml_out.write(m_tree.toString().toLatin1());
+        xml_out.close();
+    }
+    {
+        QFile xml_out("/Users/anton/Temporary/model.xml");
+        xml_out.open(QIODevice::WriteOnly);
+        xml_out.write(m_model->document().toString().toLatin1());
+        xml_out.close();
+    }
+
     document();
 }
 
@@ -754,16 +965,21 @@ void TreeModelFromScratch::onRowsAboutToBeInserted(const QModelIndex &parent,
 {
     QModelIndex index = parent;
     QString path;
-    while (index.isValid())
+    if (index.isValid())
     {
-        path = QString::fromLatin1("/") +
-                index.data(XmlTreeModel::TagNameRole).toString() + path;
-        index = index.parent();
+        while (index.isValid())
+        {
+            path = QString::fromLatin1("/") +
+                    index.data(XmlTreeModel::TagNameRole).toString() + path;
+            index = index.parent();
+        }
+    }
+    else
+    {
+        path = QString::fromLatin1("/");
     }
 
     m_rowsInserted.append(RowsInsertedInfo(path, true));
-
-    QVERIFY(compareDocuments(m_tree, m_model->document()));
 
     Q_UNUSED(start);
     Q_UNUSED(end);
@@ -774,11 +990,18 @@ void TreeModelFromScratch::onRowsInserted(const QModelIndex &parent,
 {
     QModelIndex index = parent;
     QString path;
-    while (index.isValid())
+    if (index.isValid())
     {
-        path = QString::fromLatin1("/") +
-                index.data(XmlTreeModel::TagNameRole).toString() + path;
-        index = index.parent();
+        while (index.isValid())
+        {
+            path = QString::fromLatin1("/") +
+                    index.data(XmlTreeModel::TagNameRole).toString() + path;
+            index = index.parent();
+        }
+    }
+    else
+    {
+        path = QString::fromLatin1("/");
     }
 
     m_rowsInserted.append(RowsInsertedInfo(path, false));

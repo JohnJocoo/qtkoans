@@ -1,0 +1,9 @@
+<root>
+    <with_attributes int_value="3452"></with_attributes>
+    <node1>
+        <node2>
+            <node3 string_value="by merge">
+            </node3>
+        </node2>
+    </node1>
+</root>

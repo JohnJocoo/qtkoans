@@ -1,0 +1,8 @@
+<root>
+    <with_children>
+        <child1 int_value="289"></child1>
+        <child3>
+            <inserted_node4 string_value="value"></inserted_node4>
+        </child3>
+    </with_children>
+</root>
