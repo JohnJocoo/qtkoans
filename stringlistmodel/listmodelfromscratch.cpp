@@ -99,6 +99,8 @@ private:
 
 void ListModelFromScratch::initTestCase()
 {
+    //this test must never fail, unless build is broken
+
     m_error = false;
 
     m_data << QString::fromLatin1("The");
@@ -164,7 +166,9 @@ void ListModelFromScratch::cleanupTestCase()
 
 void ListModelFromScratch::cleanup()
 {
+    // check that no error messages are left by test
     QVERIFY2(!m_error, m_errorString.toStdString().c_str());
+
     m_error = false;
     m_errorString = QString();
     m_dataChanged.clear();
@@ -263,11 +267,13 @@ void ListModelFromScratch::setData()
 
     QVERIFY(m_model->setData(m_model->index(position), value, Qt::DisplayRole));
     m_data[position] = value;
+    // check that dataChanged was emitted
     QCOMPARE(m_dataChanged.size(), 1);
     QCOMPARE(m_dataChanged[0].from, position);
     QCOMPARE(m_dataChanged[0].to, position);
     QCOMPARE(m_dataChanged[0].roles.size(), 1);
     QCOMPARE(m_dataChanged[0].roles[0], (int)Qt::DisplayRole);
+    // confirm actual changes
     QCOMPARE((*m_model)[position], value);
     QVERIFY(m_rowsInserted.isEmpty());
 }
@@ -278,8 +284,10 @@ void ListModelFromScratch::append()
 
     m_model->append(str);
 
+    // check that appended to the end
     QCOMPARE(m_model->rowCount(), m_data.size() + 1);
     QCOMPARE((*m_model)[m_data.size()], str);
+    // check that rowsAboutToBeInserted and rowsInserted was emitted
     QCOMPARE(m_rowsInserted.size(), 2);
     QCOMPARE(m_rowsInserted[0].about, true);
     QCOMPARE(m_rowsInserted[0].first, m_data.size());
@@ -310,11 +318,13 @@ void ListModelFromScratch::appendList()
 
     m_model->append(list);
 
+    // check that appended to the end
     QCOMPARE(m_model->rowCount(), m_data.size() + list.size());
     for (int i = 0; i < list.size(); ++i)
     {
         QCOMPARE((*m_model)[m_data.size() + i], list[i]);
     }
+    // check that rowsAboutToBeInserted and rowsInserted was emitted
     if (list.isEmpty())
     {
         QCOMPARE(m_rowsInserted.size(), 0);
@@ -340,8 +350,10 @@ void ListModelFromScratch::prepend()
 
     m_model->prepend(str);
 
+    // check that inserted at 0
     QCOMPARE(m_model->rowCount(), m_data.size() + 1);
     QCOMPARE((*m_model)[0], str);
+    // check that rowsAboutToBeInserted and rowsInserted was emitted
     QCOMPARE(m_rowsInserted.size(), 2);
     QCOMPARE(m_rowsInserted[0].about, true);
     QCOMPARE(m_rowsInserted[0].first, 0);
@@ -372,11 +384,13 @@ void ListModelFromScratch::prependList()
 
     m_model->prepend(list);
 
+    // check that inserted at 0
     QCOMPARE(m_model->rowCount(), m_data.size() + list.size());
     for (int i = 0; i < list.size(); ++i)
     {
         QCOMPARE((*m_model)[i], list[i]);
     }
+    // check that rowsAboutToBeInserted and rowsInserted was emitted
     if (list.isEmpty())
     {
         QCOMPARE(m_rowsInserted.size(), 0);
@@ -416,8 +430,10 @@ void ListModelFromScratch::insert()
 
     m_model->insert(position, value);
 
+    // check that inserted at i
     QCOMPARE(m_model->rowCount(), m_data.size() + 1);
     QCOMPARE((*m_model)[position], value);
+    // check that rowsAboutToBeInserted and rowsInserted was emitted
     QCOMPARE(m_rowsInserted.size(), 2);
     QCOMPARE(m_rowsInserted[0].about, true);
     QCOMPARE(m_rowsInserted[0].first, position);
@@ -464,11 +480,13 @@ void ListModelFromScratch::insertList()
 
     m_model->insert(position, list);
 
+    // check that inserted at i
     QCOMPARE(m_model->rowCount(), m_data.size() + list.size());
     for (int i = 0; i < list.size(); ++i)
     {
         QCOMPARE((*m_model)[position + i], list[i]);
     }
+    // check that rowsAboutToBeInserted and rowsInserted was emitted
     if (list.isEmpty())
     {
         QCOMPARE(m_rowsInserted.size(), 0);

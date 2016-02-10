@@ -49,7 +49,7 @@
  * Look at http://doc.qt.io/qt-5/model-view-programming.html
  * for info about Qt's understanding of MVC design pattern.
  *
- * This task main difference from "sringlistmodel" is that
+ * This task main difference from "stringlistmodel" is that
  * you'll need to handle parenting hierarchy properly.
  * That is usually done with setting QModelIndex's
  * internalId or most likely internalPointer.
@@ -64,7 +64,7 @@
  * (in many model methods you'll receive invalid index as parent,
  * meaning that you are at first level of your hierarchy).
  * Storing direct pointer to elements of some external data class
- * (not written by you) can be tricky ,and it is so for QDomDocument.
+ * (not written by you) can be tricky, and it is so for QDomDocument.
  * So here is some directions:
  *  - xml representation (QDomDocument) is actually a tree of QDomNodePrivate
  *      objects.
@@ -398,6 +398,8 @@ void updateAttrs(QDomNode node, int role, QString value, QDomDocument doc)
 
 void TreeModelFromScratch::initTestCase()
 {
+    //this test must never fail, unless build is broken
+
     m_error = false;
 
     QFile xml_in(":/xml/simple");
@@ -454,7 +456,9 @@ void TreeModelFromScratch::cleanupTestCase()
 
 void TreeModelFromScratch::cleanup()
 {
+    // check that no error messages are left by test
     QVERIFY2(!m_error, m_errorString.toStdString().c_str());
+
     m_error = false;
     m_errorString = QString();
     m_dataChanged.clear();
@@ -464,6 +468,7 @@ void TreeModelFromScratch::cleanup()
 void TreeModelFromScratch::document()
 {
     QDomDocument doc = m_model->document();
+    // check that your model provides valid QDomDocument tree
     QVERIFY(!doc.isNull());
     compareDocuments(doc, m_tree);
 }
@@ -551,6 +556,7 @@ void TreeModelFromScratch::parent()
     QCOMPARE(index.parent().isValid(), has_parent);
     if (has_parent)
     {
+        // indexes[indexes.size() - 2] should contain parent index
         QVERIFY(indexes.size() >= 2);
         QCOMPARE(index.parent().row(), indexes[indexes.size() - 2]);
     }
@@ -757,6 +763,7 @@ void TreeModelFromScratch::data()
         }
     }
     QVERIFY(index.isValid());
+    // it's important to return QVariant of wright type
     if (value.isNull())
     {
         QVERIFY(index.data(role).isNull());
@@ -834,6 +841,7 @@ void TreeModelFromScratch::setData()
     QCOMPARE(m_model->setData(index, value, role), success);
     if (success)
     {
+        // check that dataChanged was emitted
         QCOMPARE(m_dataChanged.size(), 1);
         QCOMPARE(m_dataChanged[0].path, res_path);
         QCOMPARE(m_dataChanged[0].roles.size(), 1);
@@ -901,13 +909,16 @@ void TreeModelFromScratch::merge()
     xml_in.close();
 
     m_model->merge(doc.cloneNode().toDocument());
+    // chack that actual merge happened
     QVERIFY(containsElements(m_model->document(), doc));
+    // check that rowsAboutToBeInserted and rowsInserted was emitted
     QCOMPARE(m_rowsInserted.size(), insertions.size() * 2);
     foreach (QString insertion, insertions)
     {
         QVERIFY(m_rowsInserted.contains(RowsInsertedInfo(insertion, true)));
         QVERIFY(m_rowsInserted.contains(RowsInsertedInfo(insertion, false)));
     }
+    // check that dataChanged was emitted
     QCOMPARE(m_dataChanged.size(), changes.size());
     foreach (ChangeType change, changes)
     {
@@ -918,19 +929,6 @@ void TreeModelFromScratch::merge()
 
 void TreeModelFromScratch::document2()
 {
-    {
-        QFile xml_out("/Users/anton/Temporary/test.xml");
-        xml_out.open(QIODevice::WriteOnly);
-        xml_out.write(m_tree.toString().toLatin1());
-        xml_out.close();
-    }
-    {
-        QFile xml_out("/Users/anton/Temporary/model.xml");
-        xml_out.open(QIODevice::WriteOnly);
-        xml_out.write(m_model->document().toString().toLatin1());
-        xml_out.close();
-    }
-
     document();
 }
 
