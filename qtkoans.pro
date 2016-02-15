@@ -1,4 +1,5 @@
 TEMPLATE = subdirs
 
 SUBDIRS = stringlistmodel \
-    xmltreemodel
+    xmltreemodel \
+    transform
