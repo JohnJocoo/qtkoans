@@ -1,5 +1,6 @@
 TEMPLATE = subdirs
 
-SUBDIRS = stringlistmodel \
+SUBDIRS = signal_slot \
+    stringlistmodel \
     xmltreemodel \
     transform
